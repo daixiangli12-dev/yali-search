@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>网盘资源搜索</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f4f4f4;
+  }
+  h1 {
+    text-align: center;
+    color: #333;
+  }
+  .search-box {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .search-box input {
+    padding: 10px;
+    width: 300px;
+    border: 1px solid #ddd;
+    border-radius: 4px 0 0 4px;
+  }
+  .search-box button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+  }
+  .search-box button:hover {
+    background-color: #0056b3;
+  }
+  .results {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .item {
+    background: white;
+    margin-bottom: 15px;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .item strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 16px;
+  }
+  .link {
+    display: inline-block;
+    margin-right: 15px;
+    margin-bottom: 5px;
+    padding: 5px 10px;
+    text-decoration: none;
+    border-radius: 3px;
+    color: white;
+    font-size: 14px;
+  }
+  .main-link { background-color: #28a745; }
+  .backup-link { background-color: #ffc107; color: black; }
+  .pwd-link { background-color: #17a2b8; }
+  .link:hover {
+    opacity: 0.8;
+  }
+
+  /* Modal Styles */
+  #auth-modal {
+    display: flex;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+    justify-content: center;
+    align-items: center;
+  }
+  .modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 30px;
+    border: 1px solid #888;
+    border-radius: 5px;
+    width: 80%;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+    animation-name: animatetop;
+    animation-duration: 0.3s;
+  }
+  @keyframes animatetop {
+    from {top: -300px; opacity: 0}
+    to {top: 0; opacity: 1}
+  }
+  .modal-content h3 {
+    margin-top: 0;
+  }
+  .quark-link {
+    display: inline-block;
+    margin: 15px 0;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+  }
+  .quark-link:hover {
+    background-color: #0056b3;
+  }
+  #access-code {
+    padding: 8px;
+    width: 150px;
+    text-align: center;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  #verify-btn {
+    padding: 8px 16px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  #verify-btn:hover {
+    background-color: #218838;
+  }
+  .error {
+    color: red;
+    margin-top: 10px;
+    min-height: 1.2em;
+  }
+</style>
+</head>
+<body>
+
+<h1>🔍 网盘资源搜索</h1>
+<div class="search-box">
+  <input type="text" id="keyword" placeholder="输入资源名称..." autocomplete="off" />
+  <button onclick="search()">搜索</button>
+</div>
+<div id="results" class="results"></div>
+
+<!-- Access Code Modal -->
+<div id="auth-modal">
+  <div class="modal-content">
+    <h3>🔐 获取今日访问权限</h3>
+    <p>请前往指定位置获取今日访问码：</p>
+    <a id="access-link" href="http://u3v.cn/5VLXQV" target="_blank" class="quark-link">👉 点击获取今日访问码</a>
+    <br/><br/>
+    <label for="access-code">请输入获取到的 4 位访问码:</label>
+    <input type="text" id="access-code" maxlength="4" placeholder="例如: ab12">
+    <button id="verify-btn">验证访问码</button>
+    <div id="auth-error" class="error"></div>
+  </div>
+</div>
+
+<script>
+  // --- 🔐 SHARED SECRET KEY for Data Decryption ---
+  const SHARED_SECRET_KEY = "MY_STRONG_XOR_KEY_2024!SecureItWell";
+
+  // --- 🔐 FRONTEND SECRET_SALT for Daily Access Code Generation ---
+  const SECRET_SALT_FOR_ACCESS_CODE = "YourUniqueFrontendSaltForDailyCode2024!KeepItSafe";
+
+  let EXPECTED_ACCESS_CODE = null;
+  let decryptedDataCache = null;
+
+  function getBeijingDate() {
+    const now = new Date();
+    const beijingTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+    const year = beijingTime.getUTCFullYear();
+    const month = String(beijingTime.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(beijingTime.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  async function generateAccessCode(dateStr, salt) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(dateStr + salt);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.slice(0, 2).map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+  }
+
+  function xorDecrypt(data, key) {
+    const keyBytes = new TextEncoder().encode(key);
+    const keyLen = keyBytes.length;
+
+    const result = JSON.parse(JSON.stringify(data));
+
+    function processItem(item) {
+      for (let prop in item) {
+        if (typeof item[prop] === 'string') {
+          let str = atob(item[prop]);
+          let decoded = '';
+          for (let i = 0; i < str.length; i++) {
+            decoded += String.fromCharCode(str.charCodeAt(i) ^ keyBytes[i % keyLen]);
+          }
+          item[prop] = decoded;
+        }
+      }
+    }
+
+    if (Array.isArray(result)) {
+      result.forEach(processItem);
+    } else if (typeof result === 'object' && result !== null) {
+      Object.values(result).forEach(val => {
+        if (Array.isArray(val)) val.forEach(processItem);
+      });
+    }
+
+    return result;
+  }
+
+  async function initializeApp() {
+    const authErrorEl = document.getElementById('auth-error');
+    const verifyButton = document.getElementById('verify-btn');
+    const accessCodeInput = document.getElementById('access-code');
+    const modal = document.getElementById('auth-modal');
+
+    try {
+      const today = getBeijingDate();
+      EXPECTED_ACCESS_CODE = await generateAccessCode(today, SECRET_SALT_FOR_ACCESS_CODE);
+      console.log(`[Info] Today (${today}) Expected Access Code:`, EXPECTED_ACCESS_CODE);
+
+      verifyButton.addEventListener('click', async () => {
+        const userCode = accessCodeInput.value.trim().toLowerCase();
+        if (userCode === EXPECTED_ACCESS_CODE) {
+          localStorage.setItem('yali_authorized', 'true');
+          modal.style.display = 'none';
+          authErrorEl.textContent = '';
+          await preloadDecryptedData();
+        } else {
+          authErrorEl.textContent = '访问码错误，请检查后重试。';
+          accessCodeInput.value = '';
+          accessCodeInput.focus();
+        }
+      });
+
+      if (localStorage.getItem('yali_authorized') === 'true') {
+        modal.style.display = 'none';
+        await preloadDecryptedData();
+      } else {
+        modal.style.display = 'flex';
+      }
+
+    } catch (error) {
+      console.error("[Error] App initialization failed:", error);
+      authErrorEl.textContent = `初始化失败: ${error.message}`;
+      verifyButton.disabled = true;
+    }
+  }
+
+  // ✅✅✅ 关键修改：使用相对路径加载数据 ✅✅✅
+  async function preloadDecryptedData() {
+      const resultsEl = document.getElementById('results');
+      if (decryptedDataCache) return;
+
+      try {
+          resultsEl.innerHTML = '<p>🔒 正在加载资源数据...</p>';
+          
+          // 🟢 改为相对路径：同源请求，无 CORS！
+          const response = await fetch('./data_encrypted.json');
+          
+          if (!response.ok) {
+              throw new Error(`Failed to load data: ${response.status} ${response.statusText}`);
+          }
+          
+          const encryptedText = await response.text(); // 注意：不是 .json()！因为它是加密字符串
+          
+          // 解密整个字符串
+          const keyBytes = new TextEncoder().encode(SHARED_SECRET_KEY);
+          const keyLen = keyBytes.length;
+          const encryptedBytes = atob(encryptedText);
+          let decrypted = '';
+          for (let i = 0; i < encryptedBytes.length; i++) {
+            decrypted += String.fromCharCode(encryptedBytes.charCodeAt(i) ^ keyBytes[i % keyLen]);
+          }
+          
+          decryptedDataCache = JSON.parse(decrypted);
+          console.log("[Debug] Data preloaded and decrypted.");
+          resultsEl.innerHTML = '<p>✅ 数据加载成功，请开始搜索。</p>';
+      } catch (err) {
+          console.error("[Error] Failed to preload/decrypt data:", err);
+          resultsEl.innerHTML = `<p style="color:red;">数据加载失败：${err.message}</p>`;
+      }
+  }
+
+  async function search() {
+    const keyword = document.getElementById('keyword').value.trim();
+    const resultsEl = document.getElementById('results');
+
+    if (!keyword) {
+      resultsEl.innerHTML = '<p>请输入关键词</p>';
+      return;
+    }
+
+    if (localStorage.getItem('yali_authorized') !== 'true' || !EXPECTED_ACCESS_CODE) {
+      alert('请先通过访问码验证！');
+      return;
+    }
+
+    if (!decryptedDataCache) {
+        resultsEl.innerHTML = '<p>🔒 数据尚未加载完成，请稍后再试...</p>';
+        await preloadDecryptedData();
+        if (!decryptedDataCache) {
+             resultsEl.innerHTML = '<p style="color:red;">❌ 数据加载失败，无法进行搜索。</p>';
+             return;
+        }
+    }
+
+    try {
+      const filteredResults = decryptedDataCache.filter(item =>
+        item.name && item.name.toLowerCase().includes(keyword.toLowerCase())
+      );
+
+      resultsEl.innerHTML = '';
+
+      if (filteredResults.length === 0) {
+        resultsEl.innerHTML = '<p>未找到相关资源</p>';
+        return;
+      }
+
+      filteredResults.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'item';
+
+        const mainCandidates = [];
+        if (item.baidu_link && item.baidu_link.trim()) mainCandidates.push(item.baidu_link);
+        if (item.yd_link && item.yd_link.trim()) mainCandidates.push(item.yd_link);
+        if (item.xl_link && item.xl_link.trim()) mainCandidates.push(item.xl_link);
+
+        let mainLink = '';
+        if (mainCandidates.length > 0) {
+          mainLink = mainCandidates[Math.floor(Math.random() * mainCandidates.length)];
+        }
+
+        const pwdCandidates = [];
+        if (item.wkm_link && item.wkm_link.trim()) pwdCandidates.push(item.wkm_link);
+        if (item.quarkm_link && item.quarkm_link.trim()) pwdCandidates.push(item.quarkm_link);
+        if (item.ktm_link && item.ktm_link.trim()) pwdCandidates.push(item.ktm_link);
+
+        let backupPasswordLink = '';
+        if (pwdCandidates.length > 0) {
+          backupPasswordLink = pwdCandidates[Math.floor(Math.random() * pwdCandidates.length)];
+        }
+
+        let html = `<strong>${item.name}</strong><br/>`;
+
+        if (mainLink) {
+          html += `<div><a href="${mainLink}" target="_blank" class="link main-link">🔗 主链接</a></div>`;
+        }
+        if (item.backup_link && item.backup_link.trim()) {
+          html += `<div><a href="${item.backup_link}" target="_blank" class="link backup-link">🔗 备用链接</a></div>`;
+        }
+        if (backupPasswordLink) {
+          html += `<div><a href="${backupPasswordLink}" target="_blank" class="link pwd-link">🔑 提取码</a></div>`;
+        }
+
+        if (!mainLink && !item.backup_link?.trim() && !backupPasswordLink) {
+          html += '<div>❌ 无有效链接</div>';
+        }
+
+        div.innerHTML = html;
+        resultsEl.appendChild(div);
+      });
+    } catch (err) {
+      console.error("[Error] Search processing failed:", err);
+      resultsEl.innerHTML = `<p style="color:red;">搜索处理失败：${err.message}</p>`;
+    }
+  }
+
+  document.getElementById('keyword').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      search();
+    }
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+  } else {
+    initializeApp();
+  }
+
+</script>
+
+</body>
+</html>
