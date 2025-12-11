@@ -14,6 +14,13 @@
     text-align: center;
     color: #333;
   }
+  /* 分类入口优化 */
+.categories .link {
+  margin: 6px 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  display: inline-block;
+}
   .search-box {
     display: flex;
     justify-content: center;
@@ -149,6 +156,19 @@
 <div class="search-box">
   <input type="text" id="keyword" placeholder="输入资源名称..." autocomplete="off" />
   <button onclick="search()">搜索</button>
+</div>
+  <!-- ========== 资源分类入口 ========= -->
+<div class="categories" style="max-width: 800px; margin: 0 auto 25px; text-align: center;">
+  <h2 style="color: #333; margin-bottom: 12px; font-size: 20px;">📂 资源分类浏览</h2>
+  <p style="margin: 0;">
+    <a href="https://www.kdocs.cn/l/crOyXHBVm96c">📖 获取教程</a>
+    <a href="https://share.mubu.com/doc/EBEMhUZL2z">📖 日更清单</a>
+    <a href="https://www.kdocs.cn/wo/sl/v1jDRid">📖 连载漫</a>
+    <a href="https://www.kdocs.cn/wo/sl/v117pXxr">📖 完结漫</a>
+    <a href="https://www.kdocs.cn/wo/sl/v14Bf1xz">📖 小说</a>
+    <a href="https://web.wps.cn/wo/sl/v39HLe4?app_id=KeiwhRvKjT82N9D0HUUL6">📖 许愿池</a> 
+    <a href="https://www.kdocs.cn/wo/sl/v11RMuNK">📖 许愿池实时大屏</a> 
+  </p>
 </div>
 <div id="results" class="results"></div>
 
