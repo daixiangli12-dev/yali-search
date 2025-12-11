@@ -276,24 +276,32 @@
     }
 
     const encryptedText = await response.text();
+    const encryptedBytes = atob(encryptedText); // Base64 解码为字符串（每字符代表一个字节）
 
-    // === 关键修改：生成与 Python 一致的密钥 ===
+    // === 关键修改：使用 Uint8Array 处理字节流 ===
     const encoder = new TextEncoder();
     const keyMaterial = encoder.encode(SHARED_SECRET_KEY);
     const keyHash = await crypto.subtle.digest('SHA-256', keyMaterial);
-    const keyBytes = new Uint8Array(keyHash).slice(0, 16); // 取前16字节
-    const keyLen = keyBytes.length;
+    const keyBytes = new Uint8Array(keyHash).slice(0, 16);
 
-    // Base64 解码
-    const encryptedBytes = atob(encryptedText);
-
-    // XOR 解密
-    let decrypted = '';
+    // 将 Base64 解码后的字符串转换为 Uint8Array
+    const encryptedUint8 = new Uint8Array(encryptedBytes.length);
     for (let i = 0; i < encryptedBytes.length; i++) {
-      decrypted += String.fromCharCode(encryptedBytes.charCodeAt(i) ^ keyBytes[i % keyLen]);
+      encryptedUint8[i] = encryptedBytes.charCodeAt(i);
     }
 
-    decryptedDataCache = JSON.parse(decrypted);
+    // XOR 解密
+    const decryptedUint8 = new Uint8Array(encryptedUint8.length);
+    for (let i = 0; i < encryptedUint8.length; i++) {
+      decryptedUint8[i] = encryptedUint8[i] ^ keyBytes[i % keyBytes.length];
+    }
+
+    // 使用 TextDecoder 解码为 UTF-8 字符串
+    const decoder = new TextDecoder('utf-8');
+    const decryptedJsonStr = decoder.decode(decryptedUint8);
+
+    // 解析 JSON
+    decryptedDataCache = JSON.parse(decryptedJsonStr);
     console.log("[Debug] Data preloaded and decrypted.");
     resultsEl.innerHTML = '<p>✅ 数据加载成功，请开始搜索。</p>';
   } catch (err) {
