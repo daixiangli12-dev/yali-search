@@ -264,39 +264,43 @@
 
   // ✅✅✅ 关键修改：使用相对路径加载数据 ✅✅✅
  async function preloadDecryptedData() {
-    const resultsEl = document.getElementById('results');
-    if (decryptedDataCache) return;
+  const resultsEl = document.getElementById('results');
+  if (decryptedDataCache) return;
 
-    try {
-        resultsEl.innerHTML = '<p>🔒 正在加载资源数据...</p>';
+  try {
+    resultsEl.innerHTML = '<p>🔒 正在加载资源数据...</p>';
 
-        // ✅ 使用 .text() 读取原始文本（Base64 字符串）
-        const response = await fetch('./data_encrypted.json');
-        if (!response.ok) {
-            throw new Error(`Failed to load data: ${response.status} ${response.statusText}`);
-        }
-
-        const encryptedText = await response.text(); // ← 关键！不能用 .json()
-
-        // ✅ 手动 XOR 解密整个字符串
-        const keyBytes = new TextEncoder().encode(SHARED_SECRET_KEY);
-        const keyLen = keyBytes.length;
-        const encryptedBytes = atob(encryptedText); // Base64 解码
-        let decrypted = '';
-        for (let i = 0; i < encryptedBytes.length; i++) {
-            decrypted += String.fromCharCode(encryptedBytes.charCodeAt(i) ^ keyBytes[i % keyLen]);
-        }
-
-        // ✅ 现在可以安全地解析为 JSON
-        decryptedDataCache = JSON.parse(decrypted);
-        console.log("[Debug] Data preloaded and decrypted.");
-        resultsEl.innerHTML = '<p>✅ 数据加载成功，请开始搜索。</p>';
-    } catch (err) {
-        console.error("[Error] Failed to preload/decrypt data:", err);
-        resultsEl.innerHTML = `<p style="color:red;">数据加载失败：${err.message}</p>`;
+    const response = await fetch('./data_encrypted.json');
+    if (!response.ok) {
+      throw new Error(`Failed to load data: ${response.status} ${response.statusText}`);
     }
-}
 
+    const encryptedText = await response.text();
+
+    // === 关键修改：生成与 Python 一致的密钥 ===
+    const encoder = new TextEncoder();
+    const keyMaterial = encoder.encode(SHARED_SECRET_KEY);
+    const keyHash = await crypto.subtle.digest('SHA-256', keyMaterial);
+    const keyBytes = new Uint8Array(keyHash).slice(0, 16); // 取前16字节
+    const keyLen = keyBytes.length;
+
+    // Base64 解码
+    const encryptedBytes = atob(encryptedText);
+
+    // XOR 解密
+    let decrypted = '';
+    for (let i = 0; i < encryptedBytes.length; i++) {
+      decrypted += String.fromCharCode(encryptedBytes.charCodeAt(i) ^ keyBytes[i % keyLen]);
+    }
+
+    decryptedDataCache = JSON.parse(decrypted);
+    console.log("[Debug] Data preloaded and decrypted.");
+    resultsEl.innerHTML = '<p>✅ 数据加载成功，请开始搜索。</p>';
+  } catch (err) {
+    console.error("[Error] Failed to preload/decrypt data:", err);
+    resultsEl.innerHTML = `<p style="color:red;">数据加载失败：${err.message}</p>`;
+  }
+}
   async function search() {
     const keyword = document.getElementById('keyword').value.trim();
     const resultsEl = document.getElementById('results');
