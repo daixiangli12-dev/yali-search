@@ -360,12 +360,13 @@
       resultsEl.innerHTML = '';
 
       if (filteredResults.length === 0) {
-        resultsEl.innerHTML = '<p>未找到相关资源</p>';
-        <!-- 新增提示 -->
-<p style="font-size: 14px; color: #666; margin-top: 10px;">
-  🔄 <strong>提示</strong>: 结果可能已更新，请尝试 <strong><a href="#" onclick="location.reload(); return false;" style="color: #007bff;">刷新页面</a></strong> 后重试。<br>
-  如果问题依旧，请到 <a href="https://web.wps.cn/wo/sl/v39HLe4?app_id=KeiwhRvKjT82N9D0HUUL6" target="_blank" rel="noopener noreferrer" style="color: #007bff; text-decoration: underline;">许愿池</a> 反馈。
-</p>
+resultsEl.innerHTML = `
+          <p>未找到相关资源</p>
+          <p style="font-size: 14px; color: #666; margin-top: 10px;">
+            🔄 <strong>提示</strong>: 结果可能已更新，请尝试 <strong><a href="#" onclick="location.reload(); return false;" style="color: #007bff;">刷新页面</a></strong> 后重试。<br>
+            如果问题依旧，请到 <a href="https://web.wps.cn/wo/sl/v39HLe4?app_id=KeiwhRvKjT82N9D0HUUL6" target="_blank" rel="noopener noreferrer" style="color: #007bff; text-decoration: underline;">许愿池</a> 反馈。
+          </p>
+        `;
         return;
       }
 
