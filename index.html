@@ -13,20 +13,20 @@
     <!-- 搜索框 -->
     <div class="search-container">
         <input type="text" id="searchInput" placeholder="输入资源名称...">
-        <button id="searchBtn" class="search-btn">
-            <span class="icon">🔍</span> <!-- 使用 Unicode 字符作为图标 -->
-        </button>
+        <button id="searchBtn">搜索</button>
+    </div>
+
+    <!-- 获取教程 -->
+    <div class="tutorial-link">
+        <a href="https://your-tutorial-link.com" target="_blank" class="category-item">
+            <span class="icon">📚</span> 获取教程
+        </a>
     </div>
 
     <!-- 资源分类浏览 -->
     <div class="category-container">
-        <!-- 获取教程 -->
-        <a href="https://your-tutorial-link.com" target="_blank" class="category-item">
-            <span class="icon">📚</span> 获取教程
-        </a>
-
-        <!-- 资源分类 -->
-        <div class="category-group">
+        <!-- 第一行：日更清单、连载漫、完结漫、小说 -->
+        <div class="category-row">
             <a href="https://your-resource-list-link.com" target="_blank" class="category-item">
                 <span class="icon">📅</span> 日更清单
             </a>
@@ -41,8 +41,8 @@
             </a>
         </div>
 
-        <!-- 反馈与查看 -->
-        <div class="category-group">
+        <!-- 第二行：许愿池、许愿池实时大屏 -->
+        <div class="category-row">
             <a href="https://your-wish-pool-link.com" target="_blank" class="category-item">
                 <span class="icon">💬</span> 许愿池
             </a>
@@ -56,5 +56,8 @@
     <div class="status-message">
         <span class="status-icon">✅</span> 数据加载成功，请开始搜索。
     </div>
+
+    <!-- 引入 JavaScript 文件 -->
+    <script src="script.js"></script>
 </body>
 </html>
