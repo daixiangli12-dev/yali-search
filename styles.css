@@ -8,7 +8,7 @@ body {
   padding: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   /* 设置背景图 */
-  background-image: url('https://pixabay.com/get/gd5c9009594cbba898b6074db53f09322b3679190145227545232dd4ca911794421641572252386565690261945723843_1280.jpg');
+  background-image: url('https://pixabay.com/zh/images/download/city-7701253_1920.jpg');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -268,3 +268,4 @@ h1 {
   margin-top: 10px;
   min-height: 1.2em;
 }
+
