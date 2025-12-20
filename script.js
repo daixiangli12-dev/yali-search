@@ -23,6 +23,7 @@ const ACCESS_CODES = {
 
 // --- 📦 全局变量 ---
 let decryptedDataCache = null;
+let lastFetchTime = null; // 新增：记录上次获取数据的时间戳
 
 // --- 🕒 北京时间获取 ---
 function getBeijingDate() {
@@ -165,8 +166,14 @@ try {
   const decryptedJsonStr = decoder.decode(decryptedUint8);
 
   decryptedDataCache = JSON.parse(decryptedJsonStr);
+  lastFetchTime = Date.now(); // 记录加载时间
   console.log("[Debug] Data preloaded and decrypted.");
-  resultsEl.innerHTML = '<p>✅ 数据加载成功，请开始搜索。</p>';
+  
+  // --- 新增：数据加载成功后，生成并显示分类按钮 ---
+  generateAndDisplayCategoryButtons(decryptedDataCache);
+  // --------------------------------------------------
+  
+  resultsEl.innerHTML = '<p>✅ 数据加载成功，请开始搜索或浏览分类。</p>';
 } catch (err) {
   console.error("[Error] Failed to preload/decrypt data:", err);
   resultsEl.innerHTML = `<p style="color:red;">数据加载失败：${err.message}</p>`;
@@ -203,62 +210,8 @@ async function search() {
       item.name && item.name.toLowerCase().includes(keyword.toLowerCase())
     );
 
-    resultsEl.innerHTML = '';
-
-    if (filteredResults.length === 0) {
-      resultsEl.innerHTML = `
-        <p>未找到相关资源</p>
-        <p style="font-size: 14px; color: #666; margin-top: 10px;">
-          🔄 <strong>提示</strong>: 结果可能已更新，请尝试 <strong><a href="#" onclick="location.reload(); return false;" style="color: #007bff;">刷新页面</a></strong> 后重试。<br>
-          如果问题依旧，请到 <a href="https://web.wps.cn/wo/sl/v39HLe4?app_id=KeiwhRvKjT82N9D0HUUL6" target="_blank" rel="noopener noreferrer" style="color: #007bff; text-decoration: underline;">许愿池</a> 反馈。
-        </p>
-      `;
-      return;
-    }
-
-    filteredResults.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'item';
-
-      const mainCandidates = [];
-      if (item.baidu_link && item.baidu_link.trim()) mainCandidates.push(item.baidu_link);
-      if (item.yd_link && item.yd_link.trim()) mainCandidates.push(item.yd_link);
-      if (item.xl_link && item.xl_link.trim()) mainCandidates.push(item.xl_link);
-
-      let mainLink = '';
-      if (mainCandidates.length > 0) {
-        mainLink = mainCandidates[Math.floor(Math.random() * mainCandidates.length)];
-      }
-
-      const pwdCandidates = [];
-      if (item.wkm_link && item.wkm_link.trim()) pwdCandidates.push(item.wkm_link);
-      if (item.quarkm_link && item.quarkm_link.trim()) pwdCandidates.push(item.quarkm_link);
-      if (item.ktm_link && item.ktm_link.trim()) pwdCandidates.push(item.ktm_link);
-
-      let backupPasswordLink = '';
-      if (pwdCandidates.length > 0) {
-        backupPasswordLink = pwdCandidates[Math.floor(Math.random() * pwdCandidates.length)];
-      }
-
-      let html = `<strong>${item.name}</strong><br/>`;
-
-      if (mainLink) {
-        html += `<div><a href="${mainLink}" target="_blank" class="link main-link">🔗 主链接</a></div>`;
-      }
-      if (item.backup_link && item.backup_link.trim()) {
-        html += `<div><a href="${item.backup_link}" target="_blank" class="link backup-link">🔗 备用链接</a></div>`;
-      }
-      if (backupPasswordLink) {
-        html += `<div><a href="${backupPasswordLink}" target="_blank" class="link pwd-link">🔑 提取码</a></div>`;
-      }
-
-      if (!mainLink && !item.backup_link?.trim() && !backupPasswordLink) {
-        html += '<div>❌ 无有效链接</div>';
-      }
-
-      div.innerHTML = html;
-      resultsEl.appendChild(div);
-    });
+    displayResults(filteredResults, `🔍 关键词 "${keyword}" 的搜索结果`);
+    
   } catch (err) {
     console.error("[Error] Search processing failed:", err);
     resultsEl.innerHTML = `<p style="color:red;">搜索处理失败：${err.message}</p>`;
@@ -282,7 +235,7 @@ if (document.readyState === 'loading') {
 
 // =============================================================================
 // ===                        新增代码区 (开始)                              ===
-// ===                  自动检查数据更新功能 (Fetch Timer)                    ===
+// ===              前端分类筛选 & 自动检查数据更新功能                     ===
 // =============================================================================
 
 // --- ⚙️ 配置 ---
@@ -341,6 +294,7 @@ async function checkForDataUpdate() {
 
         // 4. 更新全局缓存
         decryptedDataCache = newData;
+        lastFetchTime = Date.now(); // 更新加载时间
         console.log('[Auto-Update] 数据已更新至最新版本。');
 
         // 5. 【关键】更新页面UI
@@ -353,8 +307,12 @@ async function checkForDataUpdate() {
             // 如果没有在搜索，至少更新一下提示信息
             const resultsEl = document.getElementById('results');
             if (resultsEl && resultsEl.innerHTML.includes('数据加载成功')) {
-                 resultsEl.innerHTML = '<p>✅ 数据已自动更新，请开始搜索。</p>';
+                 resultsEl.innerHTML = '<p>✅ 数据已自动更新，请开始搜索或浏览分类。</p>';
             }
+            
+            // --- 新增：数据更新后，重新生成分类按钮 ---
+            generateAndDisplayCategoryButtons(decryptedDataCache);
+            // --------------------------------------------
         }
         
         // 可选：给用户一个轻微的通知（不打扰）
@@ -382,6 +340,150 @@ function startPeriodicDataCheck() {
   console.log(`[Auto-Update] 启动定时数据检查，间隔: ${CHECK_INTERVAL_MS / 1000 / 60} 分钟`);
   // 使用 setInterval 设置定时器
   setInterval(checkForDataUpdate, CHECK_INTERVAL_MS);
+}
+
+// --- 新增函数：生成并显示动态分类按钮 ---
+function generateAndDisplayCategoryButtons(data) {
+  const containerId = 'dynamic-category-buttons-container';
+  let container = document.getElementById(containerId);
+
+  // 如果容器不存在，则创建它并插入到指定位置
+  if (!container) {
+    const referenceElement = document.querySelector('.categories'); // 找到现有分类区域
+    const newDiv = document.createElement('div');
+    newDiv.id = containerId;
+    newDiv.className = 'dynamic-categories';
+    newDiv.style.maxWidth = '800px';
+    newDiv.style.margin = '0 auto 25px';
+    newDiv.style.textAlign = 'center';
+    newDiv.innerHTML = `
+      <h3 style="color: #555; margin-bottom: 10px; font-size: 18px;">🔍 按类型筛选</h3>
+      <div id="category-buttons-wrapper"></div>
+    `;
+    // 插入到现有 categories div 之后
+    referenceElement.parentNode.insertBefore(newDiv, referenceElement.nextSibling);
+    container = document.getElementById(containerId);
+  }
+
+  const wrapper = container.querySelector('#category-buttons-wrapper');
+  wrapper.innerHTML = ''; // 清空前一次的内容
+
+  if (!data || !Array.isArray(data)) {
+    console.warn("generateAndDisplayCategoryButtons received invalid data");
+    return;
+  }
+
+  // 提取唯一的 type
+  const typeSet = new Set();
+  data.forEach(item => {
+    if (item.type && typeof item.type === 'string') {
+      typeSet.add(item.type.trim());
+    }
+  });
+
+  const sortedTypes = Array.from(typeSet).sort();
+
+  // 为每个 type 创建按钮
+  sortedTypes.forEach(type => {
+    const button = document.createElement('button');
+    button.className = 'dynamic-category-btn';
+    button.textContent = type;
+    button.setAttribute('data-filter-type', type);
+    button.addEventListener('click', handleCategoryButtonClick);
+    wrapper.appendChild(button);
+  });
+
+  // 显示容器
+  container.style.display = 'block';
+}
+
+// --- 新增函数：处理分类按钮点击 ---
+function handleCategoryButtonClick(event) {
+  const button = event.currentTarget;
+  const selectedType = button.getAttribute('data-filter-type');
+
+  if (!selectedType || !decryptedDataCache) {
+    console.warn("Missing type or data cache for filtering");
+    return;
+  }
+
+  // 更新按钮激活状态 (可选)
+  document.querySelectorAll('.dynamic-category-btn').forEach(btn => {
+    if (btn === button) {
+       btn.classList.add('active');
+    } else {
+       btn.classList.remove('active');
+    }
+  });
+
+  // 执行筛选
+  const filteredItems = decryptedDataCache.filter(item => item.type === selectedType);
+
+  // 显示结果
+  displayResults(filteredItems, `📁 类型 "${selectedType}" 下的资源`);
+}
+
+// --- 新增/修改函数：通用显示结果函数 ---
+function displayResults(items, title = "搜索结果") {
+  const resultsEl = document.getElementById('results');
+  resultsEl.innerHTML = '';
+
+  if (items.length === 0) {
+    resultsEl.innerHTML = `<p>未找到匹配的资源。</p>`;
+    return;
+  }
+
+  // 添加标题
+  const titleEl = document.createElement('h3');
+  titleEl.textContent = title;
+  titleEl.style.color = '#333';
+  titleEl.style.marginBottom = '15px';
+  titleEl.style.fontSize = '18px';
+  resultsEl.appendChild(titleEl);
+
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'item';
+
+    const mainCandidates = [];
+    if (item.baidu_link && item.baidu_link.trim()) mainCandidates.push(item.baidu_link);
+    if (item.yd_link && item.yd_link.trim()) mainCandidates.push(item.yd_link);
+    if (item.xl_link && item.xl_link.trim()) mainCandidates.push(item.xl_link);
+
+    let mainLink = '';
+    if (mainCandidates.length > 0) {
+      mainLink = mainCandidates[Math.floor(Math.random() * mainCandidates.length)];
+    }
+
+    const pwdCandidates = [];
+    if (item.wkm_link && item.wkm_link.trim()) pwdCandidates.push(item.wkm_link);
+    if (item.quarkm_link && item.quarkm_link.trim()) pwdCandidates.push(item.quarkm_link);
+    if (item.ktm_link && item.ktm_link.trim()) pwdCandidates.push(item.ktm_link);
+
+    let backupPasswordLink = '';
+    if (pwdCandidates.length > 0) {
+      backupPasswordLink = pwdCandidates[Math.floor(Math.random() * pwdCandidates.length)];
+    }
+
+    let html = `<strong>${item.name}</strong><br/>`;
+
+    if (mainLink) {
+      html += `<div><a href="${mainLink}" target="_blank" class="link main-link">🔗 主链接</a></div>`;
+    }
+    if (item.backup_link && item.backup_link.trim()) {
+      html += `<div><a href="${item.backup_link}" target="_blank" class="link backup-link">🔗 备用链接</a></div>`;
+    }
+    if (backupPasswordLink) {
+      html += `<div><a href="${backupPasswordLink}" target="_blank" class="link pwd-link">🔑 提取码</a></div>`;
+    }
+
+    if (!mainLink && !item.backup_link?.trim() && !backupPasswordLink) {
+      html += '<div>❌ 无有效链接</div>';
+    }
+
+    div.innerHTML = html;
+    resultsEl.appendChild(div);
+  });
 }
 
 // =============================================================================
