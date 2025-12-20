@@ -4,12 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>YALI</title>
-<!-- 引入外部CSS文件 -->
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<!-- 主内容容器 -->
 <div class="container">
 
   <h1>YALI</h1>
@@ -19,7 +17,7 @@
     <button onclick="search()">搜索</button>
   </div>
 
-  <!-- ========== 固定链接分类入口 ========= -->
+  <!-- 固定功能按钮（紧接搜索框） -->
   <div class="categories">
     <p>
       <a href="https://www.kdocs.cn/l/crOyXHBVm96c" class="card-link">📖 获取教程</a>
@@ -29,14 +27,15 @@
     </p>
   </div>
 
-  <!-- 动态分类按钮将会被 JavaScript 插入到这里 -->
-  <!-- <div id="dynamic-category-buttons-container"></div> -->
-
+  <!-- 搜索结果（在固定按钮下方） -->
   <div id="results" class="results"></div>
 
-</div> <!-- /container -->
+  <!-- “按类型筛选”区域 —— 放在最底部 ✅ -->
+  <div id="dynamic-category-buttons-container"></div>
 
-<!-- Access Code Modal -->
+</div>
+
+<!-- 模态框保持不变 -->
 <div id="auth-modal">
   <div class="modal-content">
     <h3>🔐 获取今日访问权限</h3>
@@ -50,8 +49,6 @@
   </div>
 </div>
 
-<!-- 引入外部JavaScript文件 -->
 <script src="script.js"></script>
-
 </body>
 </html>
