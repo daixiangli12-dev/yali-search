@@ -7,33 +7,18 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  /* 设置背景图 */
+  /* 背景图保留原样（按你要求暂不处理显示问题） */
   background-image: url('https://raw.githubusercontent.com/daixiangli12-dev/yali-search/main/background.jpg');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
-  background-color: #0f172a; /* 备用深色背景 */
-  color: white;
+  background-color: #f0f0f0; /* 浅色备用背景 */
+  color: #1a1a1a; /* 改为深色文字，护眼 */
   min-height: 100vh;
   position: relative;
 }
 
-/* 只保留背景图，不再加遮罩 */
-body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-image: url('https://raw.githubusercontent.com/daixiangli12-dev/yali-search/main/background.jpg');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  background-color: #f0f0f0; /* 备用浅色背景，避免图片加载失败时变黑 */
-  color: #1a1a1a; /* 改为深色文字 */
-  min-height: 100vh;
-  position: relative;
-}
-
-/* 主内容区域，所有内容放在这里，确保在遮罩层之上 */
+/* 主内容区域 */
 .container {
   position: relative;
   z-index: 2;
@@ -43,14 +28,14 @@ body {
   text-align: center;
 }
 
-/* 标题样式 */
 h1 {
   font-size: 3rem;
   margin-bottom: 20px;
-  text-shadow: none; /* ✅ 移除阴影 */
+  text-shadow: none;
   color: #1a1a1a;
   font-weight: bold;
 }
+
 #results p {
   color: #1a1a1a;
   font-size: 14px;
@@ -58,15 +43,23 @@ h1 {
 }
 
 /* ==================== 搜索框样式 ==================== */
+.search-box {
+  display: flex;
+  gap: 8px;
+  margin: 20px auto;
+  max-width: 400px;
+  width: 90%;
+}
+
 .search-box input {
-  width: 400px;
+  flex: 1;
   padding: 14px 20px;
-  border: 1px solid #ccc; /* ✅ 实线边框 */
+  border: 1px solid #ccc;
   border-radius: 30px;
   font-size: 16px;
   outline: none;
-  background-color: white; /* ✅ 白色背景 */
-  color: #1a1a1a; /* ✅ 深色文字 */
+  background-color: white;
+  color: #1a1a1a;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
@@ -76,25 +69,26 @@ h1 {
 }
 
 .search-box button {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 30px;
   background-color: #0ea5e9;
   color: white;
-  border: none;
-  padding: 14px 28px;
-  border-radius: 30px;
-  cursor: pointer;
   font-size: 16px;
   font-weight: bold;
-  transition: background-color 0.3s, transform 0.2s;
+  cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 .search-box button:hover {
   background-color: #0284c7;
   transform: scale(1.05);
 }
+
 /* ==================== 分类按钮区域样式 ==================== */
 .categories,
-#dynamic-category-buttons-container /* JS 生成的动态容器 */ {
+#dynamic-category-buttons-container {
   max-width: 800px;
   margin: 30px auto;
   text-align: center;
@@ -102,38 +96,36 @@ h1 {
 
 .categories h2,
 #dynamic-category-buttons-container h3 {
-  color: #ffffff;
+  color: #1a1a1a; /* 改为深色，不再用白色 */
   margin-bottom: 15px;
   font-size: 1.3rem;
-  font-weight: 600;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  font-weight: 700;
+  text-shadow: none;
 }
 
-/* 固定链接和动态按钮的统一样式 */
 .card-link,
 .dynamic-category-btn {
   display: inline-block;
-  background-color: white; /* ✅ 白色背景 */
-  color: #1a1a1a; /* ✅ 深色文字 */
+  background-color: white;
+  color: #1a1a1a;
   padding: 10px 20px;
   border-radius: 20px;
   text-decoration: none;
   font-size: 14px;
-  font-weight: 600; /* ✅ 加粗 */
+  font-weight: 600;
   margin: 0 8px 10px 8px;
   transition: all 0.3s ease;
-  border: 1px solid #e0e0e0; /* ✅ 边框 */
+  border: 1px solid #e0e0e0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .card-link:hover,
 .dynamic-category-btn:hover {
-  background-color: #f5f5f5; /* ✅ 悬停变浅灰 */
+  background-color: #f5f5f5;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* 动态分类按钮的激活状态 */
 .dynamic-category-btn.active {
   background-color: #0ea5e9;
   color: white;
@@ -150,12 +142,12 @@ h1 {
 }
 
 .item {
-  background: white; /* ✅ 纯白背景 */
-  border: 1px solid #e0e0e0; /* ✅ 细边框 */
+  background: white;
+  border: 1px solid #e0e0e0;
   margin-bottom: 20px;
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* ✅ 轻微阴影 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease;
 }
 
@@ -167,9 +159,10 @@ h1 {
   display: block;
   margin-bottom: 12px;
   font-size: 18px;
-  color: #1a1a1a; /* ✅ 深色文字 */
+  color: #1a1a1a;
   font-weight: bold;
 }
+
 .link {
   display: inline-block;
   margin-right: 15px;
@@ -179,17 +172,57 @@ h1 {
   border-radius: 5px;
   font-size: 14px;
   transition: opacity 0.2s;
+  color: white;
 }
 
 .link:hover {
   opacity: 0.85;
 }
 
-.main-link { background-color: #10b981; } /* 绿色 */
-.backup-link { background-color: #f59e0b; color: #1e293b; } /* 黄色 */
-.pwd-link { background-color: #3b82f6; } /* 蓝色 */
+.main-link { background-color: #10b981; }     /* 绿色 */
+.backup-link { background-color: #f59e0b; color: #1e293b; } /* 黄色，文字深色 */
+.pwd-link { background-color: #3b82f6; }      /* 蓝色 */
 
-/* ==================== 模态框样式 ==================== */
+/* ==================== 响应式：移动端优化 ==================== */
+@media (max-width: 480px) {
+  .search-box {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .search-box input,
+  .search-box button {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .card-link,
+  .dynamic-category-btn {
+    margin: 6px 4px;
+    font-size: 13px;
+    padding: 8px 14px;
+    min-width: 70px;
+  }
+
+  .categories p,
+  #category-buttons-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  #dynamic-category-buttons-container {
+    padding: 0 10px;
+  }
+
+  h1 {
+    font-size: 2.2rem;
+  }
+}
+
+/* ==================== 模态框样式（授权界面，保留深色）==================== */
 #auth-modal {
   display: flex;
   position: fixed;
@@ -205,7 +238,7 @@ h1 {
 }
 
 .modal-content {
-  background: rgba(30, 41, 59, 0.95); /* 深灰蓝色 */
+  background: rgba(30, 41, 59, 0.95);
   color: white;
   margin: auto;
   padding: 30px;
@@ -273,11 +306,7 @@ h1 {
 }
 
 .error {
-  color: #ef4444; /* 红色 */
+  color: #ef4444;
   margin-top: 10px;
   min-height: 1.2em;
 }
-
-
-
-
