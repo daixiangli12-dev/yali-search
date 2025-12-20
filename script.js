@@ -6,10 +6,10 @@ const SHARED_SECRET_KEY = "MY_STRONG_XOR_KEY_2024!SecureItWell";
 // 请定期更新此列表，添加未来的日期和对应的访问码
 const ACCESS_CODES = {
   "2025-12-20": "a1b2", // 示例：今天的访问码
-  "2024-05-21": "c3d4",
-  "2024-05-22": "e5f6",
-  "2024-05-23": "g7h8",
-  "2024-05-24": "i9j0",
+  "2025-12-21": "c3d4",
+  "2025-12-22": "e5f6",
+  "2025-12-23": "g7h8",
+  "2025-12-24": "i9j0",
   // --- 添加更多日期和访问码 ---
   "2024-06-10": "k1l2",
   "2024-06-11": "m3n4",
@@ -21,9 +21,10 @@ const ACCESS_CODES = {
   "2024-06-19": "q7r8"
 };
 
-
+// --- 📦 全局变量 ---
 let decryptedDataCache = null;
 
+// --- 🕒 北京时间获取 ---
 function getBeijingDate() {
   const now = new Date();
   const beijingTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
@@ -33,7 +34,7 @@ function getBeijingDate() {
   return `${year}-${month}-${day}`;
 }
 
-
+// --- 🔓 XOR 解密函数 ---
 function xorDecrypt(data, key) {
   const keyBytes = new TextEncoder().encode(key);
   const keyLen = keyBytes.length;
@@ -64,14 +65,14 @@ function xorDecrypt(data, key) {
   return result;
 }
 
-// 新增函数：检查本地存储的授权是否仍然有效（即日期是否匹配）
+// --- 🔐 授权验证 ---
 function isAuthorizationStillValid() {
     const today = getBeijingDate();
     const storedAuthDate = localStorage.getItem('yali_auth_date');
-    // 如果存储的日期与今天相同，则认为授权有效
     return storedAuthDate === today;
 }
 
+// --- 🚀 应用初始化 ---
 async function initializeApp() {
   const authErrorEl = document.getElementById('auth-error');
   const verifyButton = document.getElementById('verify-btn');
@@ -80,15 +81,14 @@ async function initializeApp() {
 
   try {
     const today = getBeijingDate();
-    const EXPECTED_ACCESS_CODE = ACCESS_CODES[today]; // 从硬编码对象中获取
+    const EXPECTED_ACCESS_CODE = ACCESS_CODES[today];
 
-    // 如果今天没有配置访问码，应禁止访问或提示错误
     if (!EXPECTED_ACCESS_CODE) {
          console.error(`[Error] No access code configured for today: ${today}`);
          authErrorEl.textContent = `系统错误：未配置 ${today} 的访问码。`;
          verifyButton.disabled = true;
-         modal.style.display = 'flex'; // 确保模态框显示
-         return; // 阻止后续逻辑
+         modal.style.display = 'flex';
+         return;
     }
 
     console.log(`[Info] Today (${today}) Expected Access Code:`, EXPECTED_ACCESS_CODE);
@@ -96,12 +96,14 @@ async function initializeApp() {
     verifyButton.addEventListener('click', async () => {
       const userCode = accessCodeInput.value.trim().toLowerCase();
       if (userCode === EXPECTED_ACCESS_CODE) {
-        // 授权成功时，同时存储授权标志和授权日期
         localStorage.setItem('yali_authorized', 'true');
         localStorage.setItem('yali_auth_date', today);
         modal.style.display = 'none';
         authErrorEl.textContent = '';
         await preloadDecryptedData();
+        // --- 新增：授权成功后启动定时检查 ---
+        startPeriodicDataCheck();
+        // -----------------------------------
       } else {
         authErrorEl.textContent = '访问码错误，请检查后重试。';
         accessCodeInput.value = '';
@@ -109,14 +111,14 @@ async function initializeApp() {
       }
     });
 
-    // 检查 localStorage 中是否有授权标志 *并且* 日期是今天
     if (localStorage.getItem('yali_authorized') === 'true' && isAuthorizationStillValid()) {
       modal.style.display = 'none';
       await preloadDecryptedData();
+      // --- 新增：已授权状态下启动定时检查 ---
+      startPeriodicDataCheck();
+      // -----------------------------------
     } else {
-      // 如果未授权，或授权已过期（日期不对），则显示模态框
       modal.style.display = 'flex';
-      // 可选：清除过期的授权状态
       localStorage.removeItem('yali_authorized');
       localStorage.removeItem('yali_auth_date');
     }
@@ -128,7 +130,7 @@ async function initializeApp() {
   }
 }
 
-// ✅✅✅ 关键修改：使用相对路径加载数据 ✅✅✅
+// --- 📥 预加载并解密数据 ---
 async function preloadDecryptedData() {
 const resultsEl = document.getElementById('results');
 if (decryptedDataCache) return;
@@ -142,31 +144,26 @@ try {
   }
 
   const encryptedText = await response.text();
-  const encryptedBytes = atob(encryptedText); // Base64 解码为字符串（每字符代表一个字节）
+  const encryptedBytes = atob(encryptedText);
 
-  // === 关键修改：使用 Uint8Array 处理字节流 ===
   const encoder = new TextEncoder();
   const keyMaterial = encoder.encode(SHARED_SECRET_KEY);
   const keyHash = await crypto.subtle.digest('SHA-256', keyMaterial);
   const keyBytes = new Uint8Array(keyHash).slice(0, 16);
 
-  // 将 Base64 解码后的字符串转换为 Uint8Array
   const encryptedUint8 = new Uint8Array(encryptedBytes.length);
   for (let i = 0; i < encryptedBytes.length; i++) {
     encryptedUint8[i] = encryptedBytes.charCodeAt(i);
   }
 
-  // XOR 解密
   const decryptedUint8 = new Uint8Array(encryptedUint8.length);
   for (let i = 0; i < encryptedUint8.length; i++) {
     decryptedUint8[i] = encryptedUint8[i] ^ keyBytes[i % keyBytes.length];
   }
 
-  // 使用 TextDecoder 解码为 UTF-8 字符串
   const decoder = new TextDecoder('utf-8');
   const decryptedJsonStr = decoder.decode(decryptedUint8);
 
-  // 解析 JSON
   decryptedDataCache = JSON.parse(decryptedJsonStr);
   console.log("[Debug] Data preloaded and decrypted.");
   resultsEl.innerHTML = '<p>✅ 数据加载成功，请开始搜索。</p>';
@@ -176,7 +173,7 @@ try {
 }
 }
 
-
+// --- 🔍 搜索功能 ---
 async function search() {
   const keyword = document.getElementById('keyword').value.trim();
   const resultsEl = document.getElementById('results');
@@ -186,10 +183,8 @@ async function search() {
     return;
   }
 
-  // 搜索前也检查授权有效性
   if (localStorage.getItem('yali_authorized') !== 'true' || !isAuthorizationStillValid()) {
     alert('请先通过访问码验证！');
-    // 可选：自动弹出模态框
     document.getElementById('auth-modal').style.display = 'flex';
     return;
   }
@@ -270,15 +265,125 @@ async function search() {
   }
 }
 
+// --- ⌨️ 键盘事件监听 ---
 document.getElementById('keyword').addEventListener('keypress', function(e) {
   if (e.key === 'Enter') {
     search();
   }
 });
 
+// --- 🧩 DOM 加载完成后初始化 ---
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeApp);
 } else {
   initializeApp();
-
 }
+
+
+// =============================================================================
+// ===                        新增代码区 (开始)                              ===
+// ===                  自动检查数据更新功能 (Fetch Timer)                    ===
+// =============================================================================
+
+// --- ⚙️ 配置 ---
+/** 数据文件的相对路径 */
+const DATA_FILE_PATH = './data_encrypted.json';
+/** 检查间隔 (毫秒)。例如：60 * 60 * 1000 = 1小时 */
+const CHECK_INTERVAL_MS = 60 * 60 * 1000;
+
+/**
+ * 核心函数：检查数据文件是否有更新
+ * 利用浏览器的 HTTP 缓存协商机制 (ETag, Cache-Control)
+ */
+async function checkForDataUpdate() {
+  console.log('[Auto-Update] 定时器触发，开始检查数据更新...');
+  
+  // 仅在用户已授权的情况下进行检查
+  if (localStorage.getItem('yali_authorized') !== 'true' || !isAuthorizationStillValid()) {
+    console.log('[Auto-Update] 用户未授权或授权已过期，跳过本次检查。');
+    return;
+  }
+
+  try {
+    // 1. 发起 fetch 请求
+    // 浏览器会根据其缓存策略自动处理：
+    // - 如果缓存有效：可能直接返回缓存 (304) 或发送条件请求
+    // - 如果缓存过期：发送条件请求或直接请求新资源
+    const response = await fetch(DATA_FILE_PATH);
+
+    if (response.ok) {
+      if (response.status === 200) {
+        // 2a. 状态码 200 OK: 服务器返回了新数据
+        console.log('[Auto-Update] 检测到数据更新，正在下载并处理...');
+        
+        // 3. 获取并解密新数据
+        const encryptedText = await response.text();
+        const encryptedBytes = atob(encryptedText);
+
+        const encoder = new TextEncoder();
+        const keyMaterial = encoder.encode(SHARED_SECRET_KEY);
+        const keyHash = await crypto.subtle.digest('SHA-256', keyMaterial);
+        const keyBytes = new Uint8Array(keyHash).slice(0, 16);
+
+        const encryptedUint8 = new Uint8Array(encryptedBytes.length);
+        for (let i = 0; i < encryptedBytes.length; i++) {
+          encryptedUint8[i] = encryptedBytes.charCodeAt(i);
+        }
+
+        const decryptedUint8 = new Uint8Array(encryptedUint8.length);
+        for (let i = 0; i < encryptedUint8.length; i++) {
+          decryptedUint8[i] = encryptedUint8[i] ^ keyBytes[i % keyBytes.length];
+        }
+
+        const decoder = new TextDecoder('utf-8');
+        const decryptedJsonStr = decoder.decode(decryptedUint8);
+        const newData = JSON.parse(decryptedJsonStr);
+
+        // 4. 更新全局缓存
+        decryptedDataCache = newData;
+        console.log('[Auto-Update] 数据已更新至最新版本。');
+
+        // 5. 【关键】更新页面UI
+        // 如果当前搜索框有内容，重新执行搜索以反映新数据
+        const currentKeyword = document.getElementById('keyword')?.value.trim();
+        if (currentKeyword) {
+            console.log('[Auto-Update] 检测到正在进行的搜索，自动刷新搜索结果...');
+            await search(); // 调用现有 search 函数更新结果
+        } else {
+            // 如果没有在搜索，至少更新一下提示信息
+            const resultsEl = document.getElementById('results');
+            if (resultsEl && resultsEl.innerHTML.includes('数据加载成功')) {
+                 resultsEl.innerHTML = '<p>✅ 数据已自动更新，请开始搜索。</p>';
+            }
+        }
+        
+        // 可选：给用户一个轻微的通知（不打扰）
+        // 例如，在搜索框旁边显示一个短暂的 "数据已更新" 提示
+        // showTransientNotification("数据已自动更新");
+
+      } else if (response.status === 304) {
+        // 2b. 状态码 304 Not Modified: 服务器确认缓存仍然有效
+        console.log('[Auto-Update] 数据未发生变化 (304 Not Modified)。');
+      }
+    } else {
+      console.error(`[Auto-Update] 检查更新失败: HTTP ${response.status} ${response.statusText}`);
+    }
+
+  } catch (error) {
+    console.error('[Auto-Update] 检查数据更新时发生错误:', error);
+    // 可以在这里添加错误处理，例如重试逻辑或用户提示
+  }
+}
+
+/**
+ * 启动周期性的数据检查
+ */
+function startPeriodicDataCheck() {
+  console.log(`[Auto-Update] 启动定时数据检查，间隔: ${CHECK_INTERVAL_MS / 1000 / 60} 分钟`);
+  // 使用 setInterval 设置定时器
+  setInterval(checkForDataUpdate, CHECK_INTERVAL_MS);
+}
+
+// =============================================================================
+// ===                         新增代码区 (结束)                              ===
+// =============================================================================
