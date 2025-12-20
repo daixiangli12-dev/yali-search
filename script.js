@@ -357,8 +357,8 @@ function generateAndDisplayCategoryButtons(data) {
     newDiv.style.margin = '0 auto 25px';
     newDiv.style.textAlign = 'center';
     newDiv.innerHTML = `
-      <h3 style="color: #555; margin-bottom: 10px; font-size: 18px;">🔍 按类型筛选</h3>
-      <div id="category-buttons-wrapper"></div>
+  <h3>🔍 按类型筛选</h3>
+  <div id="category-buttons-wrapper"></div>
     `;
     // 插入到现有 categories div 之后
     referenceElement.parentNode.insertBefore(newDiv, referenceElement.nextSibling);
@@ -489,3 +489,4 @@ function displayResults(items, title = "搜索结果") {
 // =============================================================================
 // ===                         新增代码区 (结束)                              ===
 // =============================================================================
+
