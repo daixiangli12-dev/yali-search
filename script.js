@@ -347,23 +347,29 @@ function generateAndDisplayCategoryButtons(data) {
   const containerId = 'dynamic-category-buttons-container';
   let container = document.getElementById(containerId);
 
-  // 如果容器不存在，则创建它并插入到指定位置
+function generateAndDisplayCategoryButtons(data) {
+  const container = document.getElementById('dynamic-category-buttons-container');
+  
+  // 安全检查：如果 HTML 中没写这个容器，就报错但不崩溃
   if (!container) {
-    const referenceElement = document.querySelector('.categories'); // 找到现有分类区域
-    const newDiv = document.createElement('div');
-    newDiv.id = containerId;
-    newDiv.className = 'dynamic-categories';
-    newDiv.style.maxWidth = '800px';
-    newDiv.style.margin = '0 auto 25px';
-    newDiv.style.textAlign = 'center';
-    newDiv.innerHTML = `
-  <h3>🔍 按类型筛选</h3>
-  <div id="category-buttons-wrapper"></div>
-    `;
-    // 插入到现有 categories div 之后
-    referenceElement.parentNode.insertBefore(newDiv, referenceElement.nextSibling);
-    container = document.getElementById(containerId);
+    console.error('❌ 未找到 #dynamic-category-buttons-container，请确保 HTML 中包含该 div');
+    return;
   }
+
+  // 清空并准备 wrapper
+  let wrapper = container.querySelector('#category-buttons-wrapper');
+  if (!wrapper) {
+    // 如果 wrapper 不存在，就创建一个（因为 HTML 只有外层容器）
+    wrapper = document.createElement('div');
+    wrapper.id = 'category-buttons-wrapper';
+    container.innerHTML = '<h3>🔍 按类型筛选</h3>';
+    container.appendChild(wrapper);
+  } else {
+    wrapper.innerHTML = ''; // 清空已有按钮
+  }
+
+  // ... 后续生成按钮的逻辑保持不变 ...
+}
 
   const wrapper = container.querySelector('#category-buttons-wrapper');
   wrapper.innerHTML = ''; // 清空前一次的内容
@@ -489,4 +495,5 @@ function displayResults(items, title = "搜索结果") {
 // =============================================================================
 // ===                         新增代码区 (结束)                              ===
 // =============================================================================
+
 
