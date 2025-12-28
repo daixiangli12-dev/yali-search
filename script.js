@@ -4,7 +4,7 @@ const SHARED_SECRET_KEY = "MY_STRONG_XOR_KEY_2024!SecureItWell";
 // --- 🔐 Hardcoded Access Codes Map (Date -> Code) ---
 // 注意：这里的日期格式必须是 YYYY-MM-DD
 const ACCESS_CODES = {
-  "2025-12-20": "a1b2",
+  "2025-12-28": "a1b2",
   "2025-12-21": "c3d4",
   "2025-12-22": "e5f6",
   "2025-12-23": "g7h8",
@@ -415,3 +415,4 @@ if (document.readyState === 'loading') {
 } else {
   initializeApp();
 }
+
